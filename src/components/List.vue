@@ -5,7 +5,7 @@
     }">
       {{ index }}
     </div>
-    <Loading v-if="loading"/>
+    <Loading v-if="loading" />
   </div>
 </template>
  
@@ -13,7 +13,7 @@
 import Loading from "./Loading.vue";
 export default {
   name: 'List',
-   components: {
+  components: {
     Loading,
   },
   props: {
@@ -24,9 +24,9 @@ export default {
       loading: false
     }
   },
-  watch:{
-    loading(newVal,oldVal) {
-      console.log(newVal, oldVal,'999')
+  watch: {
+    loading(newVal, oldVal) {
+      console.log(newVal, oldVal, '999')
     }
   },
   methods: {
@@ -38,20 +38,30 @@ export default {
       return `rgb(${r},${g},${b})`;
     },
     async getList(length) {
-      if (!length > 0) return
+      if (!length) return
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve([...this.list, ...Array(length).fill(true).map(() => ({ background: this.rgb() }))])
         }, 500)
       })
     },
-
+    throttle(handler, wait) {
+      let lastTime = 0;
+      return function () {
+        let nowTime = new Date().getTime();
+        if (nowTime - lastTime > wait) {
+          handler.apply(this, arguments);
+          lastTime = nowTime;
+        }
+      }
+    },
     scrollLoadMore() {
-      if (this.list.length >= 50) return
       let scrollWrap = document.querySelector('.container');
-      var currentScrollTop = scrollWrap.scrollTop;
-      var currentOffsetHeight = scrollWrap.scrollHeight;
-      var currentClientHeight = scrollWrap.clientHeight;
+      // 超过50不再监听
+      if (this.list.length >= 50) return scrollWrap.removeEventListener('scroll', this.scrollLoadMore)
+      let currentScrollTop = scrollWrap.scrollTop;
+      let currentOffsetHeight = scrollWrap.scrollHeight;
+      let currentClientHeight = scrollWrap.clientHeight;
       if ((currentScrollTop + currentClientHeight >= currentOffsetHeight / 2)) {
         if (!this.loading) {
           this.setList()
@@ -59,6 +69,7 @@ export default {
         this.loading = true
       }
     },
+
     // 设置列表
     async setList() {
       const newArray = await this.getList(10)
@@ -69,12 +80,12 @@ export default {
   created() {
     this.setList()
   },
-  
+
   mounted() {
     this.$nextTick(() => {
       if (document.querySelector('.container')) {
         const selectWrap = document.querySelector('.container')
-        selectWrap.addEventListener('scroll', this.scrollLoadMore)
+        selectWrap.addEventListener('scroll', this.throttle(this.scrollLoadMore, 800))
       }
     })
   }
